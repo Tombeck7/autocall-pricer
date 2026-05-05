@@ -71,7 +71,7 @@ p = AutocallParams(
 # ── Cached simulation + pricing ───────────────────────────────────────────────
 @st.cache_data(show_spinner="Running Monte Carlo simulation...")
 def cached_run(p_hash):
-    return run_pricing(AutocallParams(**p_hash))
+    return run_pricing(AutocallParams(**dict(p_hash)))
 
 # Use a dict hash of params for caching
 import dataclasses
