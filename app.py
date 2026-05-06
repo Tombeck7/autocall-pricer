@@ -80,7 +80,7 @@ st.sidebar.subheader("🔴 Live Market Data")
 col_t, col_b = st.sidebar.columns([3, 1])
 ticker_input = col_t.text_input("Ticker", value="SPY", label_visibility="collapsed",
                                  placeholder="SPY, AAPL...")
-if col_b.button("Load", use_container_width=True, key="load_ac"):
+if col_b.button("Load", width='stretch', key="load_ac"):
     with st.spinner(f"Fetching {ticker_input.upper()}..."):
         data = fetch(ticker_input.strip().upper())
     if data:
@@ -243,7 +243,7 @@ with tabs[0]:
             ))
             fig_s.update_layout(title="P(called) by obs date", template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"),
                                 height=250, margin=dict(t=35,b=20))
-            st.plotly_chart(fig_s, use_container_width=True)
+            st.plotly_chart(fig_s, width='stretch')
 
     # ── Phoenix Autocall ──────────────────────────────────────────────────────
     with col_phx:
@@ -299,7 +299,7 @@ with tabs[0]:
             ))
             fig_p.update_layout(title="P(called) by obs date", template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"),
                                 height=250, margin=dict(t=35,b=20))
-            st.plotly_chart(fig_p, use_container_width=True)
+            st.plotly_chart(fig_p, width='stretch')
 
     st.divider()
 
@@ -325,13 +325,13 @@ with tabs[0]:
         xaxis_title="S at maturity", yaxis_title="Payoff (% notional)",
         template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=320,
     )
-    st.plotly_chart(fig_pf, use_container_width=True)
+    st.plotly_chart(fig_pf, width='stretch')
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[1]:
     if result is None:
-        st.info("Click **Run Pricing** in the sidebar to run the Monte Carlo simulation."); st.stop()
+        st.info("Click **Run Pricing** in the sidebar to run the Monte Carlo simulation.")
     st.header("Autocall Fair Value")
 
     # -- Live market data panel ------------------------------------------
@@ -395,7 +395,7 @@ with tabs[1]:
             )
             fig_iv_ac.update_xaxes(gridcolor='rgba(255,255,255,0.06)')
             fig_iv_ac.update_yaxes(gridcolor='rgba(255,255,255,0.06)')
-            st.plotly_chart(fig_iv_ac, use_container_width=True)
+            st.plotly_chart(fig_iv_ac, width='stretch')
 
 
     # KPIs
@@ -444,7 +444,7 @@ with tabs[1]:
         template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=360,
         legend=dict(orientation="h", y=1.08),
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_bar, width='stretch')
 
     # Barrier diagram
     st.subheader("Product Structure")
@@ -471,7 +471,7 @@ with tabs[1]:
         xaxis_title="Time (years)", yaxis_title="Underlying level",
         template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=320,
     )
-    st.plotly_chart(fig_struct, use_container_width=True)
+    st.plotly_chart(fig_struct, width='stretch')
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -479,7 +479,7 @@ with tabs[1]:
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[2]:
     if result is None:
-        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
+        st.info("Click **Run Pricing** in the sidebar first.")
     st.header("Simulated GBM Paths")
 
     n_show = st.slider("Number of paths to display", 20, 500, 100)
@@ -546,7 +546,7 @@ with tabs[2]:
         template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=520,
         legend=dict(orientation="h", y=1.05),
     )
-    st.plotly_chart(fig_paths, use_container_width=True)
+    st.plotly_chart(fig_paths, width='stretch')
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -554,7 +554,7 @@ with tabs[2]:
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[3]:
     if result is None:
-        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
+        st.info("Click **Run Pricing** in the sidebar first.")
     st.header("Greeks — Bump-and-Reprice")
 
     st.caption("Each Greek requires 2 extra full MC runs (central difference). "
@@ -608,7 +608,7 @@ with tabs[3]:
                              line_dash="dot", line_color="limegreen", row=1, col=fig_col)
         fig_g.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=380,
                              showlegend=False, margin=dict(t=40))
-        st.plotly_chart(fig_g, use_container_width=True)
+        st.plotly_chart(fig_g, width='stretch')
 
     else:
         st.info("Click **Compute Greeks** to run bump-and-reprice (takes ~10-30s depending on path count).")
@@ -619,7 +619,7 @@ with tabs[3]:
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[4]:
     if result is None:
-        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
+        st.info("Click **Run Pricing** in the sidebar first.")
     st.header("MC Convergence Analysis")
     st.caption("Price estimate and 95% confidence interval vs number of paths. "
                "Antithetic variates halve the effective variance.")
@@ -654,7 +654,7 @@ with tabs[4]:
             xaxis_type="log", template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=400,
             legend=dict(orientation="h", y=1.05),
         )
-        st.plotly_chart(fig_conv, use_container_width=True)
+        st.plotly_chart(fig_conv, width='stretch')
 
         # Std error decay
         fig_se = go.Figure()
@@ -676,7 +676,7 @@ with tabs[4]:
             legend=dict(orientation="h", y=1.05),
         )
         st.caption("Standard error decay (log-log) — should follow 1/sqrt(N)")
-        st.plotly_chart(fig_se, use_container_width=True)
+        st.plotly_chart(fig_se, width='stretch')
 
     else:
         st.info("Click **Run Convergence Analysis** to sweep path counts (takes ~30s).")
@@ -687,7 +687,7 @@ with tabs[4]:
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[5]:
     if result is None:
-        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
+        st.info("Click **Run Pricing** in the sidebar first.")
     st.header("Discounted Payoff Distribution")
 
     fig_hist = go.Figure()
@@ -719,7 +719,7 @@ with tabs[5]:
         template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=450,
         legend=dict(orientation="h", y=1.05),
     )
-    st.plotly_chart(fig_hist, use_container_width=True)
+    st.plotly_chart(fig_hist, width='stretch')
 
     # Summary stats
     c1, c2, c3, c4 = st.columns(4)
@@ -743,7 +743,7 @@ with tabs[5]:
         title="Cumulative Distribution of Payoffs",
         template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=320,
     )
-    st.plotly_chart(fig_cdf, use_container_width=True)
+    st.plotly_chart(fig_cdf, width='stretch')
 
 # ── Footer ────────────────────────────────────────────────────────────────────
 
@@ -787,7 +787,7 @@ with tabs[6]:
 
     lbl = [f"A{i+1}" for i in range(n_wo)]
     st.dataframe(_pd_wo.DataFrame(corr_wo, index=lbl, columns=lbl).style.format("{:.2f}"),
-                 use_container_width=True)
+                 width='stretch')
 
     st.subheader("Product")
     c1, c2, c3, c4, c5 = st.columns(5)
@@ -849,7 +849,7 @@ with tabs[6]:
                              paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                              height=260, font=dict(family="Inter, sans-serif", color="#e2e8f0"),
                              margin=dict(t=40,b=30,l=40,r=10))
-        st.plotly_chart(fig_b, use_container_width=True)
+        st.plotly_chart(fig_b, width='stretch')
 
         # Path fan
         st.subheader("Worst Performer Paths")
@@ -889,7 +889,7 @@ with tabs[6]:
                              margin=dict(t=40,b=40,l=52,r=16))
         fig_p.update_xaxes(gridcolor="rgba(255,255,255,0.06)")
         fig_p.update_yaxes(gridcolor="rgba(255,255,255,0.06)")
-        st.plotly_chart(fig_p, use_container_width=True)
+        st.plotly_chart(fig_p, width='stretch')
 
         # Payoff histogram
         fig_h = go.Figure()
@@ -910,7 +910,7 @@ with tabs[6]:
                              font=dict(family="Inter, sans-serif", color="#e2e8f0"),
                              legend=dict(orientation="h",y=1.05,bgcolor="rgba(0,0,0,0)"),
                              margin=dict(t=40,b=30,l=52,r=16))
-        st.plotly_chart(fig_h, use_container_width=True)
+        st.plotly_chart(fig_h, width='stretch')
 
     else:
         st.info("Configure assets and click **Price Worst-of**.")
