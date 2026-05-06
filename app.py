@@ -11,6 +11,31 @@ from dataclasses import replace
 from mc_engine import simulate_gbm, path_stats
 from autocall import AutocallParams, price_autocall, run_pricing
 from greeks import all_greeks, convergence_analysis
+from live_data import fetch, risk_free_rate
+
+# ── Design tokens ─────────────────────────────────────────────────────────────
+C = dict(
+    primary="#6366f1", success="#22c55e", danger="#ef4444",
+    warning="#f59e0b", info="#38bdf8",   purple="#a855f7",
+    text="#e2e8f0",    muted="#94a3b8",
+    grid="rgba(255,255,255,0.06)", line="rgba(255,255,255,0.12)",
+    bg="rgba(0,0,0,0)",
+)
+
+def sf(fig, title="", height=420):
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=13, color=C["text"]), x=0.01),
+        template="plotly_dark", paper_bgcolor=C["bg"], plot_bgcolor=C["bg"],
+        font=dict(family="Inter, sans-serif", size=11, color=C["text"]),
+        margin=dict(t=45 if title else 20, b=36, l=52, r=16),
+        legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0,
+                    orientation="h", y=1.06, font=dict(size=10)),
+        hoverlabel=dict(bgcolor="#1e293b", bordercolor=C["line"],
+                        font=dict(size=11, color=C["text"])),
+    )
+    fig.update_xaxes(gridcolor=C["grid"], linecolor=C["line"], zeroline=False)
+    fig.update_yaxes(gridcolor=C["grid"], linecolor=C["line"], zeroline=False)
+    return fig
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -22,19 +47,77 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+[data-testid="stSidebar"] { background: #0f172a; border-right: 1px solid #1e293b; }
 div[data-testid="stMetricValue"] { font-size: 1.35rem; font-weight: 700; }
-div[data-testid="stMetricDelta"] { font-size: 0.85rem; }
+div[data-testid="stMetricLabel"] { font-size: 0.75rem; color: #94a3b8; font-weight: 500;
+    letter-spacing:.04em; text-transform:uppercase; }
+div[data-testid="stMetricDelta"] { font-size: 0.8rem; }
+.live-banner {
+    background: linear-gradient(90deg,#0f2027,#203a43,#2c5364);
+    border: 1px solid #38bdf8; border-radius:10px;
+    padding:12px 18px; margin-bottom:16px;
+}
+.ticker-pill { background:#6366f1; color:white; padding:3px 10px;
+    border-radius:20px; font-weight:700; font-size:.85rem; }
+.price-big { font-size:1.6rem; font-weight:700; color:#e2e8f0; }
+.chg-pos { color:#22c55e; font-weight:600; }
+.chg-neg { color:#ef4444; font-weight:600; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-st.sidebar.title("⚙️ Parameters")
+# ── Session state ─────────────────────────────────────────────────────────────
+for k, v in dict(S0=100.0, r=5.0, sigma=20.0, q=2.0, live=None).items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-st.sidebar.subheader("Market")
-S0    = st.sidebar.number_input("Spot  S0",      1.0, 500.0, 100.0, 1.0)
-r     = st.sidebar.slider("Risk-free  r (%)",    0.0, 15.0, 5.0, 0.1) / 100
-sigma = st.sidebar.slider("Volatility  σ (%)",   5.0, 80.0, 20.0, 0.5) / 100
-q     = st.sidebar.slider("Dividend  q (%)",     0.0, 10.0, 2.0, 0.1) / 100
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+st.sidebar.title("📐 Autocall MC Pricer")
+st.sidebar.divider()
+
+st.sidebar.subheader("🔴 Live Market Data")
+col_t, col_b = st.sidebar.columns([3, 1])
+ticker_input = col_t.text_input("Ticker", value="SPY", label_visibility="collapsed",
+                                 placeholder="SPY, AAPL...")
+if col_b.button("Load", use_container_width=True, key="load_ac"):
+    with st.spinner(f"Fetching {ticker_input.upper()}..."):
+        data = fetch(ticker_input.strip().upper())
+    if data:
+        st.session_state.live  = data
+        st.session_state.S0    = round(data["price"], 2)
+        st.session_state.sigma = round(data["sigma_3m"] * 100, 1)
+        try:
+            st.session_state.r = round(risk_free_rate() * 100, 2)
+        except Exception:
+            pass
+        st.sidebar.success(f"{data['ticker']}  {data['price']:.2f}  ({data['change_pct']:+.2f}%)")
+    else:
+        st.sidebar.error("Ticker not found.")
+
+live = st.session_state.live
+if live:
+    chg_class = "chg-pos" if live["change"] >= 0 else "chg-neg"
+    chg_sign  = "+" if live["change"] >= 0 else ""
+    st.markdown(f"""
+    <div class="live-banner">
+        <span class="ticker-pill">{live['ticker']}</span>
+        <span class="price-big">&nbsp;{live['price']:.2f}</span>
+        <span class="{chg_class}">&nbsp;{chg_sign}{live['change_pct']:.2f}%</span>
+        &nbsp;&nbsp;
+        <span style="color:#94a3b8;font-size:.85rem">
+            HV 1M <b style="color:#e2e8f0">{live['sigma_1m']*100:.1f}%</b> &nbsp;
+            HV 3M <b style="color:#e2e8f0">{live['sigma_3m']*100:.1f}%</b>
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.sidebar.divider()
+st.sidebar.subheader("⚙️ Market")
+S0    = st.sidebar.number_input("Spot S0",         1.0, 10000.0, float(st.session_state.S0), 1.0)
+r     = st.sidebar.slider("Risk-free r (%)",       0.0, 15.0, float(st.session_state.r),    0.1) / 100
+sigma = st.sidebar.slider("Volatility σ (%)",      5.0, 80.0,  float(st.session_state.sigma), 0.5) / 100
+q     = st.sidebar.slider("Dividend q (%)",        0.0, 10.0,  2.0, 0.1) / 100
 
 st.sidebar.subheader("Product")
 T           = st.sidebar.slider("Maturity  T (years)", 1.0, 5.0, 3.0, 0.5)
@@ -160,7 +243,7 @@ with tabs[0]:
                 y=[v*100 for v in r_std.prob_by_obs_date.values()],
                 marker_color="#4CAF50",
             ))
-            fig_s.update_layout(title="P(called) by obs date", template="plotly_dark",
+            fig_s.update_layout(title="P(called) by obs date", template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"),
                                 height=250, margin=dict(t=35,b=20))
             st.plotly_chart(fig_s, use_container_width=True)
 
@@ -216,7 +299,7 @@ with tabs[0]:
                 y=[v*100 for v in r_phx.prob_by_obs_date.values()],
                 marker_color="#E91E63",
             ))
-            fig_p.update_layout(title="P(called) by obs date", template="plotly_dark",
+            fig_p.update_layout(title="P(called) by obs date", template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"),
                                 height=250, margin=dict(t=35,b=20))
             st.plotly_chart(fig_p, use_container_width=True)
 
@@ -242,7 +325,7 @@ with tabs[0]:
     fig_pf.add_hline(y=100, line_dash="dot", line_color="gray")
     fig_pf.update_layout(
         xaxis_title="S at maturity", yaxis_title="Payoff (% notional)",
-        template="plotly_dark", height=320,
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=320,
     )
     st.plotly_chart(fig_pf, use_container_width=True)
 
@@ -294,7 +377,7 @@ with tabs[1]:
         title="Call Probability by Observation Date",
         yaxis_title="P(call at date) (%)",
         yaxis2_title="Cumulative P(call) (%)",
-        template="plotly_dark", height=360,
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=360,
         legend=dict(orientation="h", y=1.08),
     )
     st.plotly_chart(fig_bar, use_container_width=True)
@@ -322,7 +405,7 @@ with tabs[1]:
         fig_struct.add_vline(x=ot, line_color="gray", line_width=0.8, line_dash="dot")
     fig_struct.update_layout(
         xaxis_title="Time (years)", yaxis_title="Underlying level",
-        template="plotly_dark", height=320,
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=320,
     )
     st.plotly_chart(fig_struct, use_container_width=True)
 
@@ -394,7 +477,7 @@ with tabs[2]:
     fig_paths.update_layout(
         xaxis_title="Time (years)", yaxis_title="Underlying S(t)",
         title=f"{n_show} sample paths  |  green=called, red=PDI, blue=mat OK",
-        template="plotly_dark", height=520,
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=520,
         legend=dict(orientation="h", y=1.05),
     )
     st.plotly_chart(fig_paths, use_container_width=True)
@@ -455,7 +538,7 @@ with tabs[3]:
             fig_g.add_vline(x=S0, line_dash="dash", line_color="tomato", row=1, col=fig_col)
             fig_g.add_hline(y=barrier_ac*S0 if fig_col == 1 else 0,
                              line_dash="dot", line_color="limegreen", row=1, col=fig_col)
-        fig_g.update_layout(template="plotly_dark", height=380,
+        fig_g.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=380,
                              showlegend=False, margin=dict(t=40))
         st.plotly_chart(fig_g, use_container_width=True)
 
@@ -498,7 +581,7 @@ with tabs[4]:
                             annotation_text=f"Full price={result.price:.4f}")
         fig_conv.update_layout(
             xaxis_title="Number of Paths", yaxis_title="Price",
-            xaxis_type="log", template="plotly_dark", height=400,
+            xaxis_type="log", template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=400,
             legend=dict(orientation="h", y=1.05),
         )
         st.plotly_chart(fig_conv, use_container_width=True)
@@ -519,7 +602,7 @@ with tabs[4]:
         fig_se.update_layout(
             xaxis_title="N paths", yaxis_title="Std Error",
             xaxis_type="log", yaxis_type="log",
-            template="plotly_dark", height=320,
+            template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=320,
             legend=dict(orientation="h", y=1.05),
         )
         st.caption("Standard error decay (log-log) — should follow 1/sqrt(N)")
@@ -561,7 +644,7 @@ with tabs[5]:
         xaxis_title="Discounted Payoff",
         yaxis_title="Density",
         title="Distribution of Discounted Payoffs by Scenario",
-        template="plotly_dark", height=450,
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=450,
         legend=dict(orientation="h", y=1.05),
     )
     st.plotly_chart(fig_hist, use_container_width=True)
@@ -586,7 +669,7 @@ with tabs[5]:
     fig_cdf.update_layout(
         xaxis_title="Payoff", yaxis_title="CDF (%)",
         title="Cumulative Distribution of Payoffs",
-        template="plotly_dark", height=320,
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter, sans-serif", color="#e2e8f0"), height=320,
     )
     st.plotly_chart(fig_cdf, use_container_width=True)
 
