@@ -166,6 +166,7 @@ tabs = st.tabs([
     "🔢 Greeks",
     "🎯 Convergence",
     "📉 Payoff Distribution",
+    "🎲 Worst-of Autocall",
 ])
 
 # ══════════════════════════════════════════════════════════════════════════════
