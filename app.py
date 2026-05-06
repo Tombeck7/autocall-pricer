@@ -12,6 +12,7 @@ from mc_engine import simulate_gbm, path_stats
 from autocall import AutocallParams, price_autocall, run_pricing
 from greeks import all_greeks, convergence_analysis
 from live_data import fetch, risk_free_rate
+from pdf_export import generate_autocall_pdf
 
 # ── Design tokens ─────────────────────────────────────────────────────────────
 C = dict(
