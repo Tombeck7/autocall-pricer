@@ -132,8 +132,8 @@ else:
     memory_cpn = False
 
 st.sidebar.subheader("Monte Carlo")
-n_paths    = st.sidebar.select_slider("Paths", [5_000,10_000,25_000,50_000,100_000], 50_000)
-n_steps_py = st.sidebar.select_slider("Steps/year", [52, 126, 252], 252)
+n_paths    = st.sidebar.select_slider("Paths", [5_000,10_000,25_000,50_000,100_000], 10_000)
+n_steps_py = st.sidebar.select_slider("Steps/year", [52, 126, 252], 52)
 seed       = st.sidebar.number_input("Seed", 0, 9999, 42, 1)
 antithetic = st.sidebar.checkbox("Antithetic variates", value=True)
 
@@ -330,6 +330,8 @@ with tabs[0]:
 
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[1]:
+    if result is None:
+        st.info("Click **Run Pricing** in the sidebar to run the Monte Carlo simulation."); st.stop()
     st.header("Autocall Fair Value")
 
     # -- Live market data panel ------------------------------------------
@@ -476,6 +478,8 @@ with tabs[1]:
 # TAB 2 — Paths
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[2]:
+    if result is None:
+        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
     st.header("Simulated GBM Paths")
 
     n_show = st.slider("Number of paths to display", 20, 500, 100)
@@ -549,6 +553,8 @@ with tabs[2]:
 # TAB 3 — Greeks
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[3]:
+    if result is None:
+        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
     st.header("Greeks — Bump-and-Reprice")
 
     st.caption("Each Greek requires 2 extra full MC runs (central difference). "
@@ -612,6 +618,8 @@ with tabs[3]:
 # TAB 4 — Convergence
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[4]:
+    if result is None:
+        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
     st.header("MC Convergence Analysis")
     st.caption("Price estimate and 95% confidence interval vs number of paths. "
                "Antithetic variates halve the effective variance.")
@@ -678,6 +686,8 @@ with tabs[4]:
 # TAB 5 — Payoff Distribution
 # ══════════════════════════════════════════════════════════════════════════════
 with tabs[5]:
+    if result is None:
+        st.info("Click **Run Pricing** in the sidebar first."); st.stop()
     st.header("Discounted Payoff Distribution")
 
     fig_hist = go.Figure()
